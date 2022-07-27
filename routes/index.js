@@ -3,26 +3,6 @@ var router = express.Router();
 var MongoClient = require("mongodb").MongoClient;
 var url = "mongodb://localhost:27017/mydb";
 
-router.post("/adduser", function (req, res, next) {
-  data = req.body;
-  username = data.username;
-  password = data.password;
-  var ob = { username: username, password: password };
-  MongoClient.connect(url, function (err, data) {
-    var dbo = data.db("mydb");
-    dbo.collection("users").insertOne(ob, function (err, data) {
-      if (err) {
-        res.send("Something wrong with the database");
-      } else {
-        res.send("Successful");
-      }
-    });
-    if (err) {
-      res.send("Error");
-    }
-  });
-});
-
 router.get("/users", function (req, res, next) {
   MongoClient.connect(url, function (err, data) {
     if (err) {
@@ -86,6 +66,35 @@ router.post("/login", function (req, res, next) {
   });
 });
 
+router.post("/createuser", function (req, res, next) {
+  const username = req.body.username;
+  const password = req.body.password;
 
+  MongoClient.connect(url, function (err, db) {
+    var dbo = db.db("mydb");
+    if (err) {
+      res.send("Error accessing database");
+    }
+    var ob = { username: username, password: password };
+    dbo
+      .collection("users")
+      .findOne({ username: username }, function (err, result) {
+        if (err) {
+          res.send("Error accessing data");
+        }
+        if (result) {
+          console.log(result);
+          res.send("The username is already taken");
+        } else {
+          dbo.collection("users").insertOne(ob, function (err, data) {
+            if (err) {
+              res.send("Error adding data");
+            }
+            res.send("User created");
+          });
+        }
+      });
+  });
+});
 
 module.exports = router;
